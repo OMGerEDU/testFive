@@ -75,6 +75,36 @@ $body = @{
 
 Invoke-RestMethod -Uri "https://api.github.com/repos/$githubUsername/$repoName/topics" -Method PUT -Headers $headers -Body $body
 
+# Get the public key for the repository
+$publicKeyResponse = Invoke-RestMethod -Uri "https://api.github.com/repos/$githubUsername/$repoName/actions/secrets/public-key" -Method GET -Headers $headers
+$publicKeyId = $publicKeyResponse.key_id
+$publicKey = $publicKeyResponse.key
+
+# Encrypt the access token using the RSA public key
+function EncryptData {
+    param(
+        [string]$data,
+        [string]$publicKey
+    )
+
+    $rsa = [System.Security.Cryptography.RSACryptoServiceProvider]::new()
+    $rsa.ImportFromPem($publicKey)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($data)
+    $encryptedBytes = $rsa.Encrypt($bytes, $true)
+    return [Convert]::ToBase64String($encryptedBytes)
+}
+
+$encryptedAccessToken = EncryptData -data $env:ACCESS_TOKEN -publicKey $publicKey
+
+# Create a new secret in the GitHub repository
+$secretName = "ACCESS_TOKEN"
+$secretBody = @{
+    "encrypted_value" = $encryptedAccessToken
+    "key_id"          = $publicKeyId
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://api.github.com/repos/$githubUsername/$repoName/actions/secrets/$secretName" -Method PUT -Headers $headers -Body $secretBody
+
 # Push the project to the new GitHub repository
 git remote add origin "https://github.com/$githubUsername/$repoName.git"
 git branch -M main
@@ -93,8 +123,6 @@ New-Item -ItemType Directory -Path "temp_scripts"
 git clone --depth 1 --filter=blob:none --sparse "https://github.com/OMGerEDU/autoVersioningScripts.git" temp_scripts
 Set-Location temp_scripts
 git sparse-checkout set scripts
-
-# Move the cloned "scripts" folder into the project folder
 
 # Move the cloned "scripts" folder into the project folder
 Set-Location ..
