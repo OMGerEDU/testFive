@@ -1,0 +1,5 @@
+{
+    "repoName" : "Youtube-Publisher",
+    "description" : "some repo description",
+    "isPrivate" : "true"
+}

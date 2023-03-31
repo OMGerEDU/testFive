@@ -1,0 +1,7 @@
+{
+    "GitHubToken": "",
+    "githubUsername" : "",
+    "repoName" : "",
+    "description" : "",
+    "isPrivate" : ""
+}
