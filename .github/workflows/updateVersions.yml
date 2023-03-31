@@ -1,0 +1,29 @@
+name: Update Versioning Scripts
+
+on:
+  repository_dispatch:
+    types: [update-versioning-scripts]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Checkout autoVersioningScripts repository
+        uses: actions/checkout@v2
+        with:
+          repository: OMGerEDU/autoVersioningScripts
+          token: ..{{ secrets.ACCESS_TOKEN }}
+          path: autoVersioningScripts
+
+      - name: Copy versioning scripts
+        run: |
+          cp -r autoVersioningScripts/scripts/* scripts/
+          git add scripts/
+          git config user.email "github-action@example.com"
+          git config user.name "GitHub Action"
+          git commit -m "Update versioning scripts"
+          git push
+
