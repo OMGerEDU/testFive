@@ -1,55 +1,32 @@
-    if ($args[0] -eq $null) {
-        Write-Host ".\fileName branchName - branch name missing."
-        return
-    }
+# Define the branch and commit message
+$branch = $args[0]
+$commitMessage = $args[1]
 
-    if ($args[1] -eq $null) {
-        Write-Host "Missing description."
-        return
-    }
+# Ensure that we are on the correct branch
+git checkout $branch
 
-    $env = Get-Content ".env" -Raw | ConvertFrom-Json
+# Add all changes to the Git staging area
+git add .
 
-    # Set the variables from the configuration file
-    $githubToken = $env.TOKEN
-    # Define your GitHub repository information
-    $githubUsername = $env.GITHUB_USERNAME
+# Commit the changes
+git commit -m $commitMessage
 
-    # Read the configuration file
-    $config = Get-Content "config.txt" -Raw | ConvertFrom-Json
-    # Change the current working directory to the parent directory
-    cd ..
-    # Remove all existing remotes from the current Git repository
-    $remotes = git remote
-    foreach ($remote in $remotes) {
-        git remote rm $remote
-    }
+# Fetch the latest changes from the remote branch
+git fetch origin $branch
 
-    Write-Host $githubToken "Tokenoch"
+# Check if there are any conflicts between the local and remote branches
+$conflicts = git diff --name-only --diff-filter=U
 
-    $repoName = $config.repoName
-    # Set the Git remote URL to the newly created GitHub repository
-    $gitRemoteUrl = "https://github.com/$githubUsername/$repoName.git"
-    git remote add origin $gitRemoteUrl
-    # Check if the branch exists
-    $branchExists = git rev-parse --verify $args[0] !> $null
-    if ($branchExists) {
-        # Update the existing branch
-        git checkout $args[0]
-        git pull origin $args[0]
-    } else {
-        # Create and checkout a new branch
-        git checkout -b $args[0]
-    }
+if ($conflicts) {
+    Write-Host "There are merge conflicts. Please resolve them manually and try again."
+    exit 1
+}
 
-    # Add all changes to the Git staging area
-    git add .
+# Merge the latest changes from the remote branch
+git merge origin/$branch
 
-    # Commit the changes with a default commit message
-    git commit -m $args[1]
+# Push the changes to the remote branch
+git push origin $branch
 
-    # Push the changes to the remote branch
-    git push origin $args[0]
-
-    # Output a success message
-    Write-Host "Project updated and committed to branch $args[0] of $repoName"
+# Output a success message
+Write-Host "Project updated and committed to branch $branch"
