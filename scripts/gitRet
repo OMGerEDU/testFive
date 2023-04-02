@@ -1,0 +1,40 @@
+# Read the configuration file
+$config = Get-Content "config.txt" -Raw | ConvertFrom-Json
+
+# Define your GitHub repository information
+$author = $config.Author
+$repoName = $config.repoName
+
+# Find the root directory of the repository
+$repoRoot = git rev-parse --show-toplevel
+
+# Get the branch name
+$branch = Read-Host "Enter the branch name to update from"
+
+# Set the Git credential for the repository
+git -C $repoRoot remote set-url origin "https://github.com/$author/$repoName.git"
+
+# Fetch the latest changes from the remote branch
+git -C $repoRoot fetch origin $branch
+
+# Check if the current branch is the specified branch
+$currentBranch = git -C $repoRoot rev-parse --abbrev-ref HEAD
+
+if ($currentBranch -ne $branch) {
+    # Checkout the specified branch
+    git -C $repoRoot checkout $branch
+} else {
+    # Check if there are any uncommitted changes in the working directory
+    $changes = git -C $repoRoot status --porcelain
+
+    if ($changes) {
+        Write-Host "There are uncommitted changes in the working directory. Please commit or stash them before updating."
+        exit 1
+    }
+}
+
+# Merge the latest changes from the remote branch
+git -C $repoRoot merge origin/$branch
+
+# Output a success message
+Write-Host "Project updated from branch $branch"
