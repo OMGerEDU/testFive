@@ -2,10 +2,10 @@
 $config = Get-Content "config.txt" -Raw | ConvertFrom-Json
 $env = Get-Content ".env" -Raw | ConvertFrom-Json
 
+$token = $env.TOKEN
 # Define your GitHub repository information
 $username = $env.GITHUB_USERNAME
 $repoName = $config.repoName
-
 
 # Find the root directory of the repository
 $repoRoot = git rev-parse --show-toplevel
@@ -17,8 +17,19 @@ $commitMessage = Read-Host "Enter the commit description"
 # Set the Git credential for the repository
 git -C $repoRoot remote set-url  "https://github.com/$username/$repoName.git"
 
-# Ensure that we are on the correct branch
-git -C $repoRoot checkout $branch
+# Check if the branch exists remotely
+$branchExists = git -C $repoRoot ls-remote --exit-code --heads origin $branch
+
+if (!$branchExists) {
+    # If the branch doesn't exist, create and checkout a new branch
+    git -C $repoRoot checkout -b $branch
+} else {
+    # If the branch exists, checkout the branch
+    git -C $repoRoot checkout $branch
+}
+
+# Add all changes to the Git staging area
+git -C $repoRoot add -A
 
 # Check if there are any changes in the working directory
 $changes = git -C $repoRoot status --porcelain
@@ -26,9 +37,6 @@ $changes = git -C $repoRoot status --porcelain
 if (!$changes) {
     Write-Host "No changes detected in the working directory. Skipping the commit."
 } else {
-    # Add all changes to the Git staging area
-    git -C $repoRoot add .
-
     # Commit the changes
     git -C $repoRoot commit -m $commitMessage
 }
