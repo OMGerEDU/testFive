@@ -1,7 +1,6 @@
 {
-    "GitHubToken": "",
-    "githubUsername" : "",
-    "repoName" : "",
-    "description" : "",
-    "isPrivate" : ""
+    "Author" : "OMGerEDU"
+    "repoName" : "AutoChannel",
+    "description" : "some repo description",
+    "isPrivate" : "true"
 }
