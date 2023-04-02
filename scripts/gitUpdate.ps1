@@ -1,10 +1,9 @@
 # Read the configuration file
 $config = Get-Content "config.txt" -Raw | ConvertFrom-Json
-$env = Get-Content ".env" -Raw | ConvertFrom-Json
 
-$token = $env.TOKEN
-# Define your GitHub repository information
-$username = $env.GITHUB_USERNAME
+# Define your GitHub repository information.
+#Define Author.
+$author = $config.Author
 $repoName = $config.repoName
 
 # Find the root directory of the repository
@@ -15,7 +14,7 @@ $branch = Read-Host "Enter the branch name"
 $commitMessage = Read-Host "Enter the commit description"
 
 # Set the Git credential for the repository
-git -C $repoRoot remote set-url  "https://github.com/$username/$repoName.git"
+git -C $repoRoot remote set-url  "https://github.com/$Author/$repoName.git"
 
 # Check if the branch exists remotely
 $branchExists = git -C $repoRoot ls-remote --exit-code --heads origin $branch
