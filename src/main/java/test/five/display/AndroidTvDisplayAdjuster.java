@@ -1,13 +1,30 @@
 package test.five.display;
 
+import android.content.Context;
+import android.content.ContentResolver;
+import android.provider.Settings;
+
 /**
  * Android TV implementation of the DisplayAdjuster interface.
- * Like the Windows implementation, this is currently a stub
- * that records values rather than interfacing with Android APIs.
+ * This version interacts with a stub of Android's Settings provider
+ * and supports starting a foreground service for continuous control.
  */
 public class AndroidTvDisplayAdjuster implements DisplayAdjuster {
-    private double brightness = MAX_BRIGHTNESS;
-    private int colorTemperature = 6500;
+    private final ContentResolver resolver;
+
+    /**
+     * Create an adjuster using a new stub Context instance.
+     */
+    public AndroidTvDisplayAdjuster() {
+        this(new Context());
+    }
+
+    /**
+     * Create an adjuster using the provided context.
+     */
+    public AndroidTvDisplayAdjuster(Context context) {
+        this.resolver = context.getContentResolver();
+    }
 
     @Override
     public void setBrightness(double level) {
@@ -15,12 +32,12 @@ public class AndroidTvDisplayAdjuster implements DisplayAdjuster {
             throw new IllegalArgumentException(
                     "Brightness must be between " + MIN_BRIGHTNESS + " and " + MAX_BRIGHTNESS);
         }
-        this.brightness = level;
+        Settings.System.putBrightness(resolver, level);
     }
 
     @Override
     public double getBrightness() {
-        return brightness;
+        return Settings.System.getBrightness(resolver);
     }
 
     @Override
@@ -29,17 +46,25 @@ public class AndroidTvDisplayAdjuster implements DisplayAdjuster {
             throw new IllegalArgumentException(
                     "Temperature must be between " + MIN_COLOR_TEMPERATURE + " and " + MAX_COLOR_TEMPERATURE);
         }
-        this.colorTemperature = temperature;
+        Settings.System.putColorTemperature(resolver, temperature);
     }
 
     @Override
     public int getColorTemperature() {
-        return colorTemperature;
+        return Settings.System.getColorTemperature(resolver);
+    }
+
+    /**
+     * Start a foreground service to maintain continuous display control.
+     */
+    public ForegroundDisplayService startContinuousControl() {
+        return ForegroundDisplayService.start(this);
     }
 
     @Override
     public void resetToDefaults() {
-        brightness = DEFAULT_BRIGHTNESS;
-        colorTemperature = DEFAULT_COLOR_TEMPERATURE;
+        setBrightness(DEFAULT_BRIGHTNESS);
+        setColorTemperature(DEFAULT_COLOR_TEMPERATURE);
     }
 }
+
