@@ -1,14 +1,30 @@
 package test.five.display;
 
 /**
- * Windows implementation of the DisplayAdjuster interface.
- * This class currently contains stubbed behavior and does not
- * interact with native Windows APIs. It records the values that
- * would be applied to the system.
+ * Windows implementation of the {@link DisplayAdjuster} interface. Real
+ * interactions with the operating system are delegated to a
+ * {@link WindowsDisplayLibrary} instance which is responsible for calling
+ * Windows.Graphics.Display or DirectX APIs. This class performs parameter
+ * validation and translates any {@link UnsupportedOperationException}
+ * from the native layer into descriptive {@link IllegalStateException}s.
  */
 public class WindowsDisplayAdjuster implements DisplayAdjuster {
-    private double brightness = MAX_BRIGHTNESS;
-    private int colorTemperature = 6500; // neutral white
+    private final WindowsDisplayLibrary nativeLib;
+
+    /**
+     * Creates an adjuster that delegates to the default native library
+     * implementation.
+     */
+    public WindowsDisplayAdjuster() {
+        this(new WindowsDisplayLibraryImpl());
+    }
+
+    /**
+     * Visible for testing: allows injection of a mock native library.
+     */
+    WindowsDisplayAdjuster(WindowsDisplayLibrary nativeLib) {
+        this.nativeLib = nativeLib;
+    }
 
     @Override
     public void setBrightness(double level) {
@@ -16,12 +32,20 @@ public class WindowsDisplayAdjuster implements DisplayAdjuster {
             throw new IllegalArgumentException(
                     "Brightness must be between " + MIN_BRIGHTNESS + " and " + MAX_BRIGHTNESS);
         }
-        this.brightness = level;
+        try {
+            nativeLib.setBrightness(level);
+        } catch (UnsupportedOperationException e) {
+            throw new IllegalStateException("Brightness control unsupported on this hardware", e);
+        }
     }
 
     @Override
     public double getBrightness() {
-        return brightness;
+        try {
+            return nativeLib.getBrightness();
+        } catch (UnsupportedOperationException e) {
+            throw new IllegalStateException("Brightness query unsupported on this hardware", e);
+        }
     }
 
     @Override
@@ -30,17 +54,25 @@ public class WindowsDisplayAdjuster implements DisplayAdjuster {
             throw new IllegalArgumentException(
                     "Temperature must be between " + MIN_COLOR_TEMPERATURE + " and " + MAX_COLOR_TEMPERATURE);
         }
-        this.colorTemperature = temperature;
+        try {
+            nativeLib.setColorTemperature(temperature);
+        } catch (UnsupportedOperationException e) {
+            throw new IllegalStateException("Color temperature control unsupported on this hardware", e);
+        }
     }
 
     @Override
     public int getColorTemperature() {
-        return colorTemperature;
+        try {
+            return nativeLib.getColorTemperature();
+        } catch (UnsupportedOperationException e) {
+            throw new IllegalStateException("Color temperature query unsupported on this hardware", e);
+        }
     }
 
     @Override
     public void resetToDefaults() {
-        brightness = DEFAULT_BRIGHTNESS;
-        colorTemperature = DEFAULT_COLOR_TEMPERATURE;
+        setBrightness(DEFAULT_BRIGHTNESS);
+        setColorTemperature(DEFAULT_COLOR_TEMPERATURE);
     }
 }
