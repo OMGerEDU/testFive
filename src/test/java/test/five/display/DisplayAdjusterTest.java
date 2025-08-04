@@ -63,4 +63,26 @@ public class DisplayAdjusterTest extends TestCase {
         assertEquals(DisplayAdjuster.DEFAULT_BRIGHTNESS, adjuster.getBrightness(), 0.0001);
         assertEquals(DisplayAdjuster.DEFAULT_COLOR_TEMPERATURE, adjuster.getColorTemperature());
     }
+
+    public void testFilterActivationAndResetWindows() {
+        WindowsDisplayAdjuster adjuster = new WindowsDisplayAdjuster();
+        adjuster.enableWarmToneFilter(true);
+        adjuster.enableGrayscaleFilter(true);
+        assertTrue(adjuster.isWarmToneFilterEnabled());
+        assertTrue(adjuster.isGrayscaleFilterEnabled());
+        adjuster.resetToDefaults();
+        assertFalse(adjuster.isWarmToneFilterEnabled());
+        assertFalse(adjuster.isGrayscaleFilterEnabled());
+    }
+
+    public void testFilterActivationAndResetAndroid() {
+        AndroidTvDisplayAdjuster adjuster = new AndroidTvDisplayAdjuster();
+        adjuster.enableWarmToneFilter(true);
+        adjuster.enableGrayscaleFilter(true);
+        assertTrue(adjuster.isWarmToneFilterEnabled());
+        assertTrue(adjuster.isGrayscaleFilterEnabled());
+        adjuster.resetToDefaults();
+        assertFalse(adjuster.isWarmToneFilterEnabled());
+        assertFalse(adjuster.isGrayscaleFilterEnabled());
+    }
 }

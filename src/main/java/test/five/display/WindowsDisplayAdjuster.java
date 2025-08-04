@@ -9,6 +9,9 @@ package test.five.display;
 public class WindowsDisplayAdjuster implements DisplayAdjuster {
     private double brightness = MAX_BRIGHTNESS;
     private int colorTemperature = 6500; // neutral white
+    private boolean warmToneEnabled = false;
+    private boolean grayscaleEnabled = false;
+    private boolean flickerDetectionEnabled = false;
 
     @Override
     public void setBrightness(double level) {
@@ -39,8 +42,57 @@ public class WindowsDisplayAdjuster implements DisplayAdjuster {
     }
 
     @Override
+    public void enableWarmToneFilter(boolean enable) {
+        warmToneEnabled = enable;
+        if (enable) {
+            applyWindowsWarmToneOverlay();
+        }
+    }
+
+    @Override
+    public boolean isWarmToneFilterEnabled() {
+        return warmToneEnabled;
+    }
+
+    @Override
+    public void enableGrayscaleFilter(boolean enable) {
+        grayscaleEnabled = enable;
+        if (enable) {
+            applyWindowsGrayscaleOverlay();
+        }
+    }
+
+    @Override
+    public boolean isGrayscaleFilterEnabled() {
+        return grayscaleEnabled;
+    }
+
+    @Override
+    public void setFlickerDetectionEnabled(boolean enable) {
+        flickerDetectionEnabled = enable;
+    }
+
+    @Override
+    public void detectFlicker(int flashesPerSecond) {
+        if (flickerDetectionEnabled && flashesPerSecond > FLICKER_THRESHOLD) {
+            brightness = Math.max(MIN_BRIGHTNESS, brightness * 0.5);
+        }
+    }
+
+    @Override
     public void resetToDefaults() {
         brightness = DEFAULT_BRIGHTNESS;
         colorTemperature = DEFAULT_COLOR_TEMPERATURE;
+        warmToneEnabled = false;
+        grayscaleEnabled = false;
+        flickerDetectionEnabled = false;
+    }
+
+    private void applyWindowsWarmToneOverlay() {
+        // Stub for Windows-specific warm-tone overlay via color filter.
+    }
+
+    private void applyWindowsGrayscaleOverlay() {
+        // Stub for Windows-specific grayscale overlay via shader.
     }
 }

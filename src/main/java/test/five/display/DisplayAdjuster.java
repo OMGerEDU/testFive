@@ -18,6 +18,8 @@ public interface DisplayAdjuster {
     int MAX_COLOR_TEMPERATURE = 10_000;
     /** Default color temperature in Kelvin used by {@link #resetToDefaults()}. */
     int DEFAULT_COLOR_TEMPERATURE = 6_500;
+    /** Threshold for detecting excessive flicker in flashes per second. */
+    int FLICKER_THRESHOLD = 30;
 
     /**
      * Set the display brightness level.
@@ -51,6 +53,46 @@ public interface DisplayAdjuster {
      * @return Kelvin value representing the color temperature
      */
     int getColorTemperature();
+
+    /**
+     * Enable or disable a warm-tone color filter.
+     * Implementations may apply platform-specific overlays or shaders.
+     *
+     * @param enable {@code true} to enable the warm-tone filter
+     */
+    void enableWarmToneFilter(boolean enable);
+
+    /**
+     * @return {@code true} if the warm-tone filter is currently enabled
+     */
+    boolean isWarmToneFilterEnabled();
+
+    /**
+     * Enable or disable a grayscale color filter.
+     *
+     * @param enable {@code true} to enable the grayscale filter
+     */
+    void enableGrayscaleFilter(boolean enable);
+
+    /**
+     * @return {@code true} if the grayscale filter is currently enabled
+     */
+    boolean isGrayscaleFilterEnabled();
+
+    /**
+     * Enable or disable automatic flicker detection.
+     *
+     * @param enable {@code true} to enable flicker detection
+     */
+    void setFlickerDetectionEnabled(boolean enable);
+
+    /**
+     * Analyze the current flicker rate and lower brightness if excessive
+     * flashing is detected.
+     *
+     * @param flashesPerSecond observed flash frequency
+     */
+    void detectFlicker(int flashesPerSecond);
 
     /**
      * Reset both brightness and color temperature to safe defaults.
