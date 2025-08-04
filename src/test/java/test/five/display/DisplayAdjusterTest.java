@@ -7,12 +7,61 @@ import junit.framework.TestCase;
  */
 public class DisplayAdjusterTest extends TestCase {
 
-    public void testWindowsAdjusterStoresValues() {
-        WindowsDisplayAdjuster adjuster = new WindowsDisplayAdjuster();
+    /**
+     * Simple fake implementation that mimics the native Windows API for tests.
+     */
+    private static class FakeWindowsDisplayLibrary implements WindowsDisplayLibrary {
+        double brightness = DisplayAdjuster.DEFAULT_BRIGHTNESS;
+        int colorTemperature = DisplayAdjuster.DEFAULT_COLOR_TEMPERATURE;
+        boolean brightnessSupported = true;
+        boolean colorTempSupported = true;
+
+        @Override
+        public double getBrightness() {
+            if (!brightnessSupported) {
+                throw new UnsupportedOperationException("brightness unsupported");
+            }
+            return brightness;
+        }
+
+        @Override
+        public void setBrightness(double level) {
+            if (!brightnessSupported) {
+                throw new UnsupportedOperationException("brightness unsupported");
+            }
+            brightness = level;
+        }
+
+        @Override
+        public int getColorTemperature() {
+            if (!colorTempSupported) {
+                throw new UnsupportedOperationException("color temp unsupported");
+            }
+            return colorTemperature;
+        }
+
+        @Override
+        public void setColorTemperature(int temperature) {
+            if (!colorTempSupported) {
+                throw new UnsupportedOperationException("color temp unsupported");
+            }
+            colorTemperature = temperature;
+        }
+    }
+
+    public void testWindowsAdjusterDelegatesToNative() {
+        FakeWindowsDisplayLibrary lib = new FakeWindowsDisplayLibrary();
+        WindowsDisplayAdjuster adjuster = new WindowsDisplayAdjuster(lib);
         adjuster.setBrightness(0.3);
         adjuster.setColorTemperature(4000);
-        assertEquals(0.3, adjuster.getBrightness(), 0.0001);
-        assertEquals(4000, adjuster.getColorTemperature());
+        assertEquals(0.3, lib.brightness, 0.0001);
+        assertEquals(4000, lib.colorTemperature);
+
+        // verify getters read from native layer
+        lib.brightness = 0.6;
+        lib.colorTemperature = 5000;
+        assertEquals(0.6, adjuster.getBrightness(), 0.0001);
+        assertEquals(5000, adjuster.getColorTemperature());
     }
 
     public void testAndroidAdjusterStoresValues() {
@@ -24,7 +73,7 @@ public class DisplayAdjusterTest extends TestCase {
     }
 
     public void testBrightnessOutOfRangeThrows() {
-        DisplayAdjuster adjuster = new WindowsDisplayAdjuster();
+        DisplayAdjuster adjuster = new WindowsDisplayAdjuster(new FakeWindowsDisplayLibrary());
         try {
             adjuster.setBrightness(-0.1);
             fail("Expected IllegalArgumentException");
@@ -56,11 +105,34 @@ public class DisplayAdjusterTest extends TestCase {
     }
 
     public void testResetToDefaults() {
-        DisplayAdjuster adjuster = new WindowsDisplayAdjuster();
+        FakeWindowsDisplayLibrary lib = new FakeWindowsDisplayLibrary();
+        DisplayAdjuster adjuster = new WindowsDisplayAdjuster(lib);
         adjuster.setBrightness(0.2);
         adjuster.setColorTemperature(3000);
         adjuster.resetToDefaults();
-        assertEquals(DisplayAdjuster.DEFAULT_BRIGHTNESS, adjuster.getBrightness(), 0.0001);
-        assertEquals(DisplayAdjuster.DEFAULT_COLOR_TEMPERATURE, adjuster.getColorTemperature());
+        assertEquals(DisplayAdjuster.DEFAULT_BRIGHTNESS, lib.brightness, 0.0001);
+        assertEquals(DisplayAdjuster.DEFAULT_COLOR_TEMPERATURE, lib.colorTemperature);
+    }
+
+    public void testUnsupportedHardwareThrowsDescriptiveException() {
+        FakeWindowsDisplayLibrary lib = new FakeWindowsDisplayLibrary();
+        lib.brightnessSupported = false;
+        WindowsDisplayAdjuster adjuster = new WindowsDisplayAdjuster(lib);
+        try {
+            adjuster.setBrightness(0.5);
+            fail("Expected IllegalStateException");
+        } catch (IllegalStateException expected) {
+            assertTrue(expected.getMessage().toLowerCase().contains("brightness"));
+        }
+
+        lib = new FakeWindowsDisplayLibrary();
+        lib.colorTempSupported = false;
+        adjuster = new WindowsDisplayAdjuster(lib);
+        try {
+            adjuster.getColorTemperature();
+            fail("Expected IllegalStateException");
+        } catch (IllegalStateException expected) {
+            assertTrue(expected.getMessage().toLowerCase().contains("color temperature"));
+        }
     }
 }
