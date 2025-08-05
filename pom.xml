@@ -36,4 +36,30 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>windows-installer</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.panteleyev</groupId>
+            <artifactId>jpackage-maven-plugin</artifactId>
+            <version>1.9.1</version>
+            <configuration>
+              <mainClass>test.five.App</mainClass>
+              <input>${project.build.directory}</input>
+              <mainJar>${project.build.finalName}.jar</mainJar>
+              <name>testFive</name>
+              <type>msi</type>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
