@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import test.five.display.DisplayAdjuster;
 
@@ -70,35 +68,20 @@ public class ProfileManager {
 
     /** Persist profiles and schedules to disk as JSON. */
     private void save() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\"profiles\":[");
-        boolean first = true;
-        for (Profile profile : profiles.values()) {
-            if (!first) sb.append(',');
-            sb.append("{\"user\":\"").append(profile.getUser()).append("\",")
-              .append("\"brightness\":").append(profile.getBrightness()).append(',')
-              .append("\"colorTemperature\":").append(profile.getColorTemperature()).append('}');
-            first = false;
-        }
-        sb.append("],\"schedules\":[");
-        first = true;
+        Map<String, Object> root = new HashMap<>();
+        root.put("profiles", new ArrayList<>(profiles.values()));
+        List<Map<String, Object>> scheduleRecords = new ArrayList<>();
         for (ProfileSchedule schedule : schedules) {
-            if (!first) sb.append(',');
-            sb.append("{\"user\":\"").append(schedule.getUser()).append("\",")
-              .append("\"start\":\"").append(schedule.getStart()).append("\",")
-              .append("\"end\":\"").append(schedule.getEnd()).append("\",")
-              .append("\"activity\":");
-            if (schedule.getActivity() == null) {
-                sb.append("null");
-            } else {
-                sb.append('\"').append(schedule.getActivity()).append('\"');
-            }
-            sb.append('}');
-            first = false;
+            Map<String, Object> rec = new HashMap<>();
+            rec.put("user", schedule.getUser());
+            rec.put("start", schedule.getStart().toString());
+            rec.put("end", schedule.getEnd().toString());
+            rec.put("activity", schedule.getActivity());
+            scheduleRecords.add(rec);
         }
-        sb.append("]}");
+        root.put("schedules", scheduleRecords);
         try {
-            Files.write(storagePath, sb.toString().getBytes(StandardCharsets.UTF_8));
+            Files.writeString(storagePath, SimpleJson.stringify(root), StandardCharsets.UTF_8);
         } catch (IOException e) {
             // Swallowing exception for simplicity in this stub implementation
         }
@@ -112,24 +95,34 @@ public class ProfileManager {
             return;
         }
         try {
-            String content = new String(Files.readAllBytes(storagePath), StandardCharsets.UTF_8);
-            Pattern profilePattern = Pattern.compile("\\{\\\"user\\\":\\\"(.*?)\\\",\\\"brightness\\\":(.*?),\\\"colorTemperature\\\":(.*?)\\}");
-            Matcher pm = profilePattern.matcher(content);
-            while (pm.find()) {
-                String user = pm.group(1);
-                double brightness = Double.parseDouble(pm.group(2));
-                int color = Integer.parseInt(pm.group(3));
-                profiles.put(user, new Profile(user, brightness, color));
+            String content = Files.readString(storagePath, StandardCharsets.UTF_8);
+            Object parsed = SimpleJson.parse(content);
+            if (!(parsed instanceof Map)) {
+                return;
             }
-            Pattern schedulePattern = Pattern.compile("\\{\\\"user\\\":\\\"(.*?)\\\",\\\"start\\\":\\\"(.*?)\\\",\\\"end\\\":\\\"(.*?)\\\",\\\"activity\\\":(null|\\\"(.*?)\\\")\\}");
-            Matcher sm = schedulePattern.matcher(content);
-            while (sm.find()) {
-                String user = sm.group(1);
-                LocalTime start = LocalTime.parse(sm.group(2));
-                LocalTime end = LocalTime.parse(sm.group(3));
-                String rawActivity = sm.group(4);
-                String activity = "null".equals(rawActivity) ? null : sm.group(5);
-                schedules.add(new ProfileSchedule(user, start, end, activity));
+            Map<?,?> root = (Map<?,?>) parsed;
+            Object p = root.get("profiles");
+            if (p instanceof List<?> list) {
+                for (Object obj : list) {
+                    if (obj instanceof Map<?,?> m) {
+                        String user = (String) m.get("user");
+                        double brightness = ((Number) m.get("brightness")).doubleValue();
+                        int color = ((Number) m.get("colorTemperature")).intValue();
+                        profiles.put(user, new Profile(user, brightness, color));
+                    }
+                }
+            }
+            Object s = root.get("schedules");
+            if (s instanceof List<?> list) {
+                for (Object obj : list) {
+                    if (obj instanceof Map<?,?> m) {
+                        String user = (String) m.get("user");
+                        LocalTime start = LocalTime.parse((String) m.get("start"));
+                        LocalTime end = LocalTime.parse((String) m.get("end"));
+                        String activity = (String) m.get("activity");
+                        schedules.add(new ProfileSchedule(user, start, end, activity));
+                    }
+                }
             }
         } catch (IOException e) {
             // ignore errors in this simple implementation
