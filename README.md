@@ -14,3 +14,14 @@ This project uses a mirrored Maven repository to avoid outages at the default Ma
    ```
 
 These steps ensure repeatable builds without requiring external network access after the initial dependency download.
+
+## Windows installer
+
+On a Windows host with JDK 17 or newer, an MSI installer can be generated
+using the bundled PowerShell script:
+
+```powershell
+./scripts/buildWindowsInstaller.ps1
+```
+
+The resulting installer will be created in the `target` directory.
